@@ -1,0 +1,16 @@
+# 后端构建产物
+backend/target/
+*.class
+
+# 前端依赖与构建产物
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 系统文件
+.DS_Store
+*.log
