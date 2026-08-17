@@ -68,79 +68,92 @@
         </div>
       </template>
 
-      <div v-loading="loading" class="order-grid">
+      <div v-loading="loading" class="order-list">
         <el-empty v-if="!loading && orders.length === 0" description="暂无发货订单" />
-        <el-row v-else :gutter="16">
-          <el-col v-for="order in orders" :key="order.id" :xs="24" :sm="24" :md="12" :lg="12" :xl="12" class="order-col">
-            <el-card shadow="hover" class="order-card" :class="'status-' + order.status">
-              <div class="order-head">
-                <div class="order-head-left">
-                  <span class="order-no">{{ order.orderNo }}</span>
-                  <el-tag size="small" type="info">记账日 {{ order.shipDate || '-' }}</el-tag>
-                </div>
-                <div class="status-tag">
-                  <el-tag v-if="order.status === 2" type="success" effect="dark" size="large" class="status-paid">
-                    已回款
-                  </el-tag>
-                  <el-tag v-else-if="order.status === 1" type="danger" effect="dark" size="large" class="status-partial">
-                    部分回款 · {{ order.overdueDays >= 0 ? order.overdueDays : 0 }} 天
-                  </el-tag>
-                  <el-tag v-else type="danger" effect="dark" size="large" class="status-unpaid">
-                    未回款 · {{ order.overdueDays >= 0 ? order.overdueDays : 0 }} 天
-                  </el-tag>
-                </div>
+        <el-table
+          v-else
+          :data="orders"
+          border
+          stripe
+          size="default"
+          class="shipment-table"
+          :row-class-name="rowClassName"
+        >
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <div class="expand-detail">
+                <div class="expand-title">发货明细</div>
+                <el-table :data="row.items" size="small" border>
+                  <el-table-column type="index" label="#" width="50" align="center" />
+                  <el-table-column prop="manufacturerName" label="出库厂家" min-width="160" />
+                  <el-table-column prop="productName" label="产品名称" min-width="160" />
+                  <el-table-column prop="quantity" label="数量" width="100" align="right">
+                    <template #default="{ row: item }">{{ formatNum(item.quantity) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="batchNo" label="批号" width="120" align="center" />
+                  <el-table-column prop="amount" label="金额" width="120" align="right">
+                    <template #default="{ row: item }">{{ formatMoney(item.amount) }}</template>
+                  </el-table-column>
+                </el-table>
               </div>
+            </template>
+          </el-table-column>
 
-              <div class="order-business">
-                商业公司：{{ order.businessName || '-' }}
-              </div>
+          <el-table-column prop="orderNo" label="发货单号" min-width="150">
+            <template #default="{ row }">
+              <span class="order-no">{{ row.orderNo }}</span>
+            </template>
+          </el-table-column>
 
-              <el-table :data="order.items" size="small" class="item-table" :show-header="false">
-                <el-table-column label="厂家/产品" min-width="180">
-                  <template #default="{ row }">
-                    <div class="item-cell">
-                      <span class="item-manufacturer">{{ row.manufacturerName }}</span>
-                      <span class="item-product">{{ row.productName }}</span>
-                    </div>
-                  </template>
-                </el-table-column>
-                <el-table-column label="数量" width="70" align="right">
-                  <template #default="{ row }">{{ formatNum(row.quantity) }}</template>
-                </el-table-column>
-                <el-table-column label="批号" width="90" align="center">
-                  <template #default="{ row }">{{ row.batchNo || '-' }}</template>
-                </el-table-column>
-                <el-table-column label="金额" width="100" align="right">
-                  <template #default="{ row }">{{ formatMoney(row.amount) }}</template>
-                </el-table-column>
-              </el-table>
+          <el-table-column prop="businessName" label="商业名称" min-width="170" show-overflow-tooltip />
 
-              <div class="order-summary">
-                <div class="summary-item">
-                  <span class="summary-label">订单合计</span>
-                  <span class="summary-value">{{ formatMoney(order.totalAmount) }}</span>
-                </div>
-                <div class="summary-item">
-                  <span class="summary-label">已回金额</span>
-                  <span class="summary-value paid">{{ formatMoney(order.paidAmount) }}</span>
-                </div>
-                <div class="summary-item">
-                  <span class="summary-label">已回数量</span>
-                  <span class="summary-value">{{ formatNum(order.paidQuantity) }}</span>
-                </div>
-              </div>
+          <el-table-column label="回款状态" width="170" align="center">
+            <template #default="{ row }">
+              <el-tag v-if="row.status === 2" type="success" effect="dark" size="large" class="status-paid">
+                已回款
+              </el-tag>
+              <el-tag v-else-if="row.status === 1" type="danger" effect="dark" size="large" class="status-partial">
+                部分回款 · {{ row.overdueDays >= 0 ? row.overdueDays : 0 }} 天
+              </el-tag>
+              <el-tag v-else type="danger" effect="dark" size="large" class="status-unpaid">
+                未回款 · {{ row.overdueDays >= 0 ? row.overdueDays : 0 }} 天
+              </el-tag>
+            </template>
+          </el-table-column>
 
+          <el-table-column prop="totalAmount" label="订单合计" width="120" align="right">
+            <template #default="{ row }">
+              <span class="amount-value">{{ formatMoney(row.totalAmount) }}</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="paidAmount" label="已回金额" width="120" align="right">
+            <template #default="{ row }">
+              <span class="amount-value paid">{{ formatMoney(row.paidAmount) }}</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="paidQuantity" label="已回数量" width="100" align="right">
+            <template #default="{ row }">{{ formatNum(row.paidQuantity) }}</template>
+          </el-table-column>
+
+          <el-table-column prop="shipDate" label="记账日期" width="110" align="center">
+            <template #default="{ row }">{{ row.shipDate || '-' }}</template>
+          </el-table-column>
+
+          <el-table-column label="操作" width="240" align="center" fixed="right">
+            <template #default="{ row }">
               <div class="order-actions">
-                <el-button size="small" @click="openDetail(order)">查看</el-button>
-                <el-button size="small" type="primary" plain @click="openEdit(order)">修改</el-button>
-                <el-button size="small" type="danger" plain @click="handleDelete(order)">删除</el-button>
-                <el-button v-if="order.status !== 2" size="small" type="warning" @click="openPayment(order)">
+                <el-button size="small" @click="openDetail(row)">查看</el-button>
+                <el-button size="small" type="primary" plain @click="openEdit(row)">修改</el-button>
+                <el-button size="small" type="danger" plain @click="handleDelete(row)">删除</el-button>
+                <el-button v-if="row.status !== 2" size="small" type="warning" @click="openPayment(row)">
                   添加回款
                 </el-button>
               </div>
-            </el-card>
-          </el-col>
-        </el-row>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
 
       <div class="pagination-wrap">
@@ -370,6 +383,10 @@ function formatMoney(v) {
 function formatNum(v) {
   const n = Number(v || 0)
   return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function rowClassName({ row }) {
+  return 'order-status-' + row.status
 }
 
 async function loadData(page) {
@@ -652,108 +669,75 @@ onMounted(async () => {
   min-height: 200px;
 }
 
-.order-col {
-  margin-bottom: 16px;
+.order-list {
+  min-height: 200px;
 }
 
-.order-card {
-  border-left: 4px solid #409eff;
+.shipment-table {
+  width: 100%;
 }
 
-.order-card.status-0 {
-  border-left-color: #f56c6c;
+.shipment-table :deep(.order-status-0) {
+  --el-table-tr-bg-color: #fef0f0;
 }
 
-.order-card.status-1 {
-  border-left-color: #e6a23c;
+.shipment-table :deep(.order-status-0:hover > td) {
+  --el-table-tr-bg-color: #fde2e2;
 }
 
-.order-card.status-2 {
-  border-left-color: #67c23a;
+.shipment-table :deep(.order-status-1) {
+  --el-table-tr-bg-color: #fdf6ec;
 }
 
-.order-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.order-head-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.shipment-table :deep(.order-status-1:hover > td) {
+  --el-table-tr-bg-color: #faecd8;
 }
 
 .order-no {
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.status-tag {
-  display: flex;
-  align-items: center;
-}
-
-.order-business {
-  font-size: 13px;
-  color: #606266;
-  margin-bottom: 8px;
-}
-
-.item-table {
-  margin-bottom: 8px;
-}
-
-.item-cell {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.4;
-}
-
-.item-manufacturer {
-  font-size: 12px;
-  color: #909399;
-}
-
-.item-product {
-  font-size: 13px;
-  color: #303133;
-}
-
-.order-summary {
-  display: flex;
-  gap: 24px;
-  padding: 8px 0;
-  border-top: 1px dashed #ebeef5;
-  margin-bottom: 8px;
-}
-
-.summary-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.summary-label {
-  font-size: 12px;
-  color: #909399;
-}
-
-.summary-value {
   font-size: 14px;
   font-weight: 600;
   color: #303133;
 }
 
-.summary-value.paid {
+.amount-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.amount-value.paid {
   color: #67c23a;
+}
+
+.expand-detail {
+  padding: 12px 16px;
+  background: #fafafa;
+}
+
+.expand-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 8px;
+}
+
+.status-paid {
+  min-width: 90px;
+}
+
+.status-partial {
+  min-width: 150px;
+}
+
+.status-unpaid {
+  min-width: 140px;
 }
 
 .order-actions {
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .items-editor {
