@@ -277,30 +277,102 @@
       </div>
     </el-dialog>
 
-    <el-dialog v-model="paymentVisible" title="添加回款" width="480px" destroy-on-close>
-      <el-form ref="paymentFormRef" :model="paymentForm" :rules="paymentRules" label-width="90px">
-        <el-form-item label="订单">
-          <span class="payment-order-no">{{ paymentForm.orderNo }}</span>
+    <el-dialog v-model="paymentVisible" title="【回款记录】" width="640px" top="8vh" destroy-on-close class="payment-dialog">
+      <div class="payment-info-grid">
+        <div class="info-row">
+          <div class="info-item">
+            <span class="info-label">编号</span>
+            <span class="info-value">{{ paymentForm.orderNo }}</span>
+          </div>
+          <div class="info-item info-item-wide">
+            <span class="info-label">客户名称</span>
+            <span class="info-value">{{ paymentForm.businessName }}</span>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-item info-item-wide">
+            <span class="info-label">产品</span>
+            <span class="info-value">{{ paymentForm.productName }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">发货日期</span>
+            <span class="info-value">{{ paymentForm.shipDate || '-' }}</span>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-item">
+            <span class="info-label">数量</span>
+            <span class="info-value">{{ formatNum(paymentForm.itemQuantity) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">单价</span>
+            <span class="info-value">{{ formatMoney(paymentForm.unitPrice) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">批号</span>
+            <span class="info-value">{{ paymentForm.batchNo || '-' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="payment-summary-box">
+        <div class="summary-row">
+          <div class="summary-cell">
+            <span class="summary-label">订单总计</span>
+            <span class="summary-value">{{ formatMoney(paymentForm.totalAmount) }} 元</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-label">已回金额</span>
+            <span class="summary-value">{{ formatMoney(paymentForm.paidAmount) }} 元</span>
+          </div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-cell">
+            <span class="summary-label">未回款金额</span>
+            <span class="summary-value danger">{{ formatMoney(paymentForm.remainAmount) }} 元</span>
+          </div>
+          <div class="summary-cell">
+            <span class="summary-label">本次回款</span>
+            <el-input-number
+              v-model="paymentForm.amount"
+              :min="0.01"
+              :precision="2"
+              :max="paymentForm.remainAmount"
+              controls-position="right"
+              class="payment-amount-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      <el-form ref="paymentFormRef" :model="paymentForm" :rules="paymentRules" label-width="80px" class="payment-form">
+        <el-form-item label="回款日期" prop="payDate">
+          <el-date-picker v-model="paymentForm.payDate" type="date" placeholder="请选择回款日期" value-format="YYYY-MM-DD" class="w-full" />
         </el-form-item>
-        <el-form-item label="未回金额">
-          <span class="remain-amount">{{ formatMoney(paymentForm.remainAmount) }}</span>
-        </el-form-item>
-        <el-form-item label="回款金额" prop="amount">
-          <el-input-number v-model="paymentForm.amount" :min="0.01" :precision="2" :max="paymentForm.remainAmount" class="w-full" controls-position="right" />
+        <el-form-item label="回款方式" prop="payMethod">
+          <el-select v-model="paymentForm.payMethod" class="w-full">
+            <el-option label="银行转账" value="银行转账" />
+            <el-option label="银行承兑" value="银行承兑" />
+            <el-option label="商业承兑" value="商业承兑" />
+            <el-option label="现金" value="现金" />
+            <el-option label="其他" value="其他" />
+          </el-select>
         </el-form-item>
         <el-form-item label="回款数量">
           <el-input-number v-model="paymentForm.quantity" :min="0" :precision="2" class="w-full" controls-position="right" />
-        </el-form-item>
-        <el-form-item label="回款日期" prop="payDate">
-          <el-date-picker v-model="paymentForm.payDate" type="date" placeholder="请选择回款日期" value-format="YYYY-MM-DD" class="w-full" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="paymentForm.remark" type="textarea" :rows="2" placeholder="备注信息" />
         </el-form-item>
       </el-form>
+
       <template #footer>
-        <el-button @click="paymentVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleAddPayment">确定</el-button>
+        <div class="payment-footer">
+          <el-button class="footer-cancel" @click="paymentVisible = false">取消</el-button>
+          <el-button class="footer-confirm" type="success" :loading="saving" @click="handleAddPayment">
+            确定
+          </el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -374,10 +446,19 @@ const editRules = {
 const paymentForm = reactive({
   orderId: null,
   orderNo: '',
+  businessName: '',
+  productName: '',
+  shipDate: '',
+  itemQuantity: 0,
+  unitPrice: 0,
+  batchNo: '',
+  totalAmount: 0,
+  paidAmount: 0,
   remainAmount: 0,
   amount: 0,
   quantity: 0,
   payDate: '',
+  payMethod: '',
   remark: ''
 })
 
@@ -548,13 +629,29 @@ async function handleDelete(order) {
 }
 
 function openPayment(order) {
+  const firstItem = order.items && order.items.length ? order.items[0] : null
+  const total = Number(order.totalAmount || 0)
+  const paid = Number(order.paidAmount || 0)
+  const remain = Math.max(0, total - paid)
+  const unitPrice = firstItem && Number(firstItem.quantity) > 0
+    ? Number(firstItem.amount) / Number(firstItem.quantity)
+    : 0
   Object.assign(paymentForm, {
     orderId: order.id,
     orderNo: order.orderNo,
-    remainAmount: (Number(order.totalAmount || 0) - Number(order.paidAmount || 0)),
+    businessName: order.businessName || '',
+    productName: firstItem ? firstItem.productName : '',
+    shipDate: order.shipDate || '',
+    itemQuantity: firstItem ? Number(firstItem.quantity) : 0,
+    unitPrice,
+    batchNo: firstItem ? firstItem.batchNo : '',
+    totalAmount: total,
+    paidAmount: paid,
+    remainAmount: remain,
     amount: 0,
     quantity: 0,
     payDate: '',
+    payMethod: '银行转账',
     remark: ''
   })
   paymentVisible.value = true
@@ -570,6 +667,7 @@ async function handleAddPayment() {
         amount: paymentForm.amount,
         quantity: paymentForm.quantity,
         payDate: paymentForm.payDate,
+        payMethod: paymentForm.payMethod,
         remark: paymentForm.remark
       })
       ElMessage.success('回款添加成功')
@@ -804,6 +902,116 @@ onMounted(async () => {
 .remain-amount {
   color: #f56c6c;
   font-weight: 600;
+}
+
+.payment-dialog .el-dialog__body {
+  padding-top: 12px;
+}
+
+.payment-info-grid {
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 8px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.info-item-wide {
+  flex: 1;
+}
+
+.info-label {
+  color: #909399;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.info-value {
+  color: #303133;
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.payment-summary-box {
+  border: 2px solid #f56c6c;
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  margin-bottom: 8px;
+}
+
+.summary-row:last-child {
+  margin-bottom: 0;
+}
+
+.summary-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.summary-label {
+  color: #606266;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.summary-value {
+  color: #303133;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.summary-value.danger {
+  color: #f56c6c;
+}
+
+.payment-amount-input {
+  width: 160px;
+}
+
+.payment-form {
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  padding: 12px 16px 0;
+}
+
+.payment-footer {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.footer-confirm {
+  min-width: 96px;
 }
 
 .pagination-wrap {

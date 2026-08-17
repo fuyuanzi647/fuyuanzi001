@@ -25,6 +25,8 @@ public class PaymentRecordVO {
 
     private LocalDate payDate;
 
+    private String payMethod;
+
     private String remark;
 
     private LocalDateTime createTime;
