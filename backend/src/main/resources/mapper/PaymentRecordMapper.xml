@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fuyuanzi.flow.module.payment.mapper.PaymentRecordMapper">
+
+    <select id="selectRecordsByOrderId" resultType="com.fuyuanzi.flow.module.payment.vo.PaymentRecordVO">
+        SELECT r.id,
+               r.order_id      AS orderId,
+               o.order_no      AS orderNo,
+               r.business_id   AS businessId,
+               b.name          AS businessName,
+               r.amount,
+               r.quantity,
+               r.pay_date      AS payDate,
+               r.remark,
+               r.create_time   AS createTime
+        FROM payment_record r
+        LEFT JOIN shipment_order o ON r.order_id = o.id AND o.deleted = 0
+        LEFT JOIN base_business b ON r.business_id = b.id AND b.deleted = 0
+        WHERE r.deleted = 0
+        AND r.order_id = #{orderId}
+        ORDER BY r.pay_date DESC, r.id DESC
+    </select>
+
+</mapper>

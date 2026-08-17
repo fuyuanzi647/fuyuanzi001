@@ -3,6 +3,10 @@ import MainLayout from '../layout/MainLayout.vue'
 import PlaceholderView from '../views/PlaceholderView.vue'
 import { moduleMenus } from '../config/menu'
 
+const pageMap = {
+  '/payment/shipment': () => import('../views/payment/ShipmentView.vue')
+}
+
 function buildLeafRoutes(items, moduleName, apiPrefix) {
   const routes = []
   for (const item of items) {
@@ -12,7 +16,7 @@ function buildLeafRoutes(items, moduleName, apiPrefix) {
       routes.push({
         path: item.path,
         name: item.path,
-        component: PlaceholderView,
+        component: pageMap[item.path] || PlaceholderView,
         meta: { title: item.name, moduleName: moduleName || item.name, apiPrefix }
       })
     }

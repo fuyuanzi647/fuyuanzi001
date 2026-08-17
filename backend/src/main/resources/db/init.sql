@@ -171,24 +171,42 @@ CREATE TABLE IF NOT EXISTS return_exchange (
 
 -- 发货订单
 CREATE TABLE IF NOT EXISTS shipment_order (
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    order_no     VARCHAR(50)  NOT NULL COMMENT '发货单号',
+    business_id  BIGINT       NOT NULL COMMENT '商业公司ID',
+    total_amount DECIMAL(16,2) NOT NULL DEFAULT 0 COMMENT '订单合计金额',
+    paid_amount  DECIMAL(16,2) NOT NULL DEFAULT 0 COMMENT '已回金额',
+    paid_quantity DECIMAL(14,2) NOT NULL DEFAULT 0 COMMENT '已回数量',
+    ship_date    DATE         COMMENT '记账日期',
+    remark       VARCHAR(500) COMMENT '备注',
+    create_time  DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time  DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted      TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否1是'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='发货订单';
+
+-- 发货订单明细
+CREATE TABLE IF NOT EXISTS shipment_item (
     id          BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-    order_no    VARCHAR(50)  NOT NULL COMMENT '发货单号',
-    business_id BIGINT       NOT NULL COMMENT '商业公司ID',
+    order_id    BIGINT       NOT NULL COMMENT '发货订单ID',
+    manufacturer_id BIGINT   NOT NULL COMMENT '出库厂家ID',
     product_id  BIGINT       NOT NULL COMMENT '产品ID',
-    quantity    DECIMAL(14,2) NOT NULL DEFAULT 0 COMMENT '发货数量',
-    amount      DECIMAL(16,2) NOT NULL DEFAULT 0 COMMENT '发货金额',
-    ship_date   DATE         COMMENT '发货日期',
+    quantity    DECIMAL(14,2) NOT NULL DEFAULT 0 COMMENT '数量',
+    batch_no    VARCHAR(100) COMMENT '批号',
+    amount      DECIMAL(16,2) NOT NULL DEFAULT 0 COMMENT '金额',
     create_time DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted     TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否1是'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='发货订单';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='发货订单明细';
 
 -- 回款记录
 CREATE TABLE IF NOT EXISTS payment_record (
     id          BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    order_id    BIGINT       NOT NULL COMMENT '发货订单ID',
     business_id BIGINT       NOT NULL COMMENT '商业公司ID',
     amount      DECIMAL(16,2) NOT NULL DEFAULT 0 COMMENT '回款金额',
+    quantity    DECIMAL(14,2) NOT NULL DEFAULT 0 COMMENT '回款数量',
     pay_date    DATE         COMMENT '回款日期',
+    remark      VARCHAR(500) COMMENT '备注',
     create_time DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted     TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否1是'
