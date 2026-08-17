@@ -99,13 +99,23 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="orderNo" label="发货单号" min-width="150">
-            <template #default="{ row }">
-              <span class="order-no">{{ row.orderNo }}</span>
-            </template>
+          <el-table-column label="订单日期" width="110" align="center">
+            <template #default="{ row }">{{ row.shipDate || '-' }}</template>
           </el-table-column>
 
           <el-table-column prop="businessName" label="商业名称" min-width="170" show-overflow-tooltip />
+
+          <el-table-column label="产品名称" min-width="200">
+            <template #default="{ row }">
+              <div v-if="row.items && row.items.length" class="product-cell">
+                <span class="product-name">{{ row.items[0].productName }}</span>
+                <el-tag v-if="row.items.length > 1" size="small" type="info">
+                  +{{ row.items.length - 1 }}
+                </el-tag>
+              </div>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
 
           <el-table-column label="回款状态" width="170" align="center">
             <template #default="{ row }">
@@ -137,20 +147,21 @@
             <template #default="{ row }">{{ formatNum(row.paidQuantity) }}</template>
           </el-table-column>
 
-          <el-table-column prop="shipDate" label="记账日期" width="110" align="center">
-            <template #default="{ row }">{{ row.shipDate || '-' }}</template>
-          </el-table-column>
-
-          <el-table-column label="操作" width="240" align="center" fixed="right">
+          <el-table-column label="操作" width="120" align="center" fixed="right">
             <template #default="{ row }">
-              <div class="order-actions">
-                <el-button size="small" @click="openDetail(row)">查看</el-button>
-                <el-button size="small" type="primary" plain @click="openEdit(row)">修改</el-button>
-                <el-button size="small" type="danger" plain @click="handleDelete(row)">删除</el-button>
-                <el-button v-if="row.status !== 2" size="small" type="warning" @click="openPayment(row)">
-                  添加回款
+              <el-dropdown trigger="click" @command="(cmd) => handleCommand(cmd, row)">
+                <el-button size="small" type="primary">
+                  操作<el-icon class="el-icon--right"><ArrowDown /></el-icon>
                 </el-button>
-              </div>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="view">查看</el-dropdown-item>
+                    <el-dropdown-item command="edit">修改</el-dropdown-item>
+                    <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
+                    <el-dropdown-item v-if="row.status !== 2" command="payment" divided>添加回款</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </template>
           </el-table-column>
         </el-table>
@@ -387,6 +398,23 @@ function formatNum(v) {
 
 function rowClassName({ row }) {
   return 'order-status-' + row.status
+}
+
+function handleCommand(command, row) {
+  switch (command) {
+    case 'view':
+      openDetail(row)
+      break
+    case 'edit':
+      openEdit(row)
+      break
+    case 'delete':
+      handleDelete(row)
+      break
+    case 'payment':
+      openPayment(row)
+      break
+  }
 }
 
 async function loadData(page) {
@@ -693,9 +721,14 @@ onMounted(async () => {
   --el-table-tr-bg-color: #faecd8;
 }
 
-.order-no {
+.product-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.product-name {
   font-size: 14px;
-  font-weight: 600;
   color: #303133;
 }
 
@@ -731,13 +764,6 @@ onMounted(async () => {
 
 .status-unpaid {
   min-width: 140px;
-}
-
-.order-actions {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  justify-content: center;
 }
 
 .items-editor {
