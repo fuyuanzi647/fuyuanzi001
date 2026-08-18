@@ -206,6 +206,7 @@ CREATE TABLE IF NOT EXISTS payment_record (
     amount      DECIMAL(16,2) NOT NULL DEFAULT 0 COMMENT '回款金额',
     quantity    DECIMAL(14,2) NOT NULL DEFAULT 0 COMMENT '回款数量',
     pay_date    DATE         COMMENT '回款日期',
+    office_date DATE         COMMENT '办事处日期',
     pay_method  VARCHAR(50)  COMMENT '回款方式',
     remark      VARCHAR(500) COMMENT '备注',
     create_time DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

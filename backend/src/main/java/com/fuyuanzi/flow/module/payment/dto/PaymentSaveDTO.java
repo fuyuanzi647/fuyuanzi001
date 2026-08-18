@@ -22,6 +22,8 @@ public class PaymentSaveDTO {
     @NotNull(message = "回款日期不能为空")
     private LocalDate payDate;
 
+    private LocalDate officeDate;
+
     private String payMethod;
 
     private String remark;

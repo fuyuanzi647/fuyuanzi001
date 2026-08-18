@@ -24,6 +24,12 @@ public class ShipmentOrderVO {
 
     private BigDecimal paidQuantity;
 
+    /** 未回款金额 */
+    private BigDecimal remainAmount;
+
+    /** 未回款数量 */
+    private BigDecimal remainQuantity;
+
     private LocalDate shipDate;
 
     private String remark;

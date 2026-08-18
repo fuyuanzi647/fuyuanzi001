@@ -137,14 +137,14 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="paidAmount" label="已回金额" width="120" align="right">
+          <el-table-column prop="remainAmount" label="未回金额" width="120" align="right">
             <template #default="{ row }">
-              <span class="amount-value paid">{{ formatMoney(row.paidAmount) }}</span>
+              <span class="amount-value unpaid">{{ formatMoney(row.remainAmount) }}</span>
             </template>
           </el-table-column>
 
-          <el-table-column prop="paidQuantity" label="已回数量" width="100" align="right">
-            <template #default="{ row }">{{ formatNum(row.paidQuantity) }}</template>
+          <el-table-column prop="remainQuantity" label="未回数量" width="100" align="right">
+            <template #default="{ row }">{{ formatNum(row.remainQuantity) }}</template>
           </el-table-column>
 
           <el-table-column label="操作" width="120" align="center" fixed="right">
@@ -243,8 +243,11 @@
             <el-tag v-else type="danger">未回款</el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="订单合计">{{ formatMoney(detail.totalAmount) }}</el-descriptions-item>
+          <el-descriptions-item label="未回金额">
+            <span class="remain-amount">{{ formatMoney(detail.remainAmount) }}</span>
+          </el-descriptions-item>
           <el-descriptions-item label="已回金额">{{ formatMoney(detail.paidAmount) }}</el-descriptions-item>
-          <el-descriptions-item label="已回数量">{{ formatNum(detail.paidQuantity) }}</el-descriptions-item>
+          <el-descriptions-item label="未回数量">{{ formatNum(detail.remainQuantity) }}</el-descriptions-item>
           <el-descriptions-item label="备注">{{ detail.remark || '-' }}</el-descriptions-item>
         </el-descriptions>
 
@@ -266,6 +269,9 @@
         <el-table :data="payments" size="small" border v-loading="paymentLoading">
           <el-table-column type="index" label="#" width="50" align="center" />
           <el-table-column prop="payDate" label="回款日期" width="110" align="center" />
+          <el-table-column prop="officeDate" label="办事处日期" width="110" align="center">
+            <template #default="{ row }">{{ row.officeDate || '-' }}</template>
+          </el-table-column>
           <el-table-column prop="amount" label="回款金额" width="120" align="right">
             <template #default="{ row }">{{ formatMoney(row.amount) }}</template>
           </el-table-column>
@@ -348,6 +354,9 @@
       <el-form ref="paymentFormRef" :model="paymentForm" :rules="paymentRules" label-width="80px" class="payment-form">
         <el-form-item label="回款日期" prop="payDate">
           <el-date-picker v-model="paymentForm.payDate" type="date" placeholder="请选择回款日期" value-format="YYYY-MM-DD" class="w-full" />
+        </el-form-item>
+        <el-form-item label="办事处日期">
+          <el-date-picker v-model="paymentForm.officeDate" type="date" placeholder="请选择办事处日期" value-format="YYYY-MM-DD" class="w-full" />
         </el-form-item>
         <el-form-item label="回款方式" prop="payMethod">
           <el-select v-model="paymentForm.payMethod" class="w-full">
@@ -458,6 +467,7 @@ const paymentForm = reactive({
   amount: 0,
   quantity: 0,
   payDate: '',
+  officeDate: '',
   payMethod: '',
   remark: ''
 })
@@ -651,6 +661,7 @@ function openPayment(order) {
     amount: 0,
     quantity: 0,
     payDate: '',
+    officeDate: '',
     payMethod: '银行转账',
     remark: ''
   })
@@ -667,6 +678,7 @@ async function handleAddPayment() {
         amount: paymentForm.amount,
         quantity: paymentForm.quantity,
         payDate: paymentForm.payDate,
+        officeDate: paymentForm.officeDate,
         payMethod: paymentForm.payMethod,
         remark: paymentForm.remark
       })
@@ -838,6 +850,10 @@ onMounted(async () => {
 
 .amount-value.paid {
   color: #67c23a;
+}
+
+.amount-value.unpaid {
+  color: #f56c6c;
 }
 
 .expand-detail {

@@ -28,6 +28,8 @@ public class PaymentRecord {
 
     private LocalDate payDate;
 
+    private LocalDate officeDate;
+
     private String payMethod;
 
     private String remark;

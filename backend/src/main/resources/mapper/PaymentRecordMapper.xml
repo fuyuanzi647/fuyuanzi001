@@ -11,6 +11,7 @@
                r.amount,
                r.quantity,
                r.pay_date      AS payDate,
+               r.office_date   AS officeDate,
                r.pay_method    AS payMethod,
                r.remark,
                r.create_time   AS createTime

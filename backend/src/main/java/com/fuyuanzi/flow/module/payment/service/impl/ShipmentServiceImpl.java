@@ -147,6 +147,7 @@ public class ShipmentServiceImpl implements ShipmentService {
         record.setAmount(dto.getAmount());
         record.setQuantity(dto.getQuantity() == null ? BigDecimal.ZERO : dto.getQuantity());
         record.setPayDate(dto.getPayDate());
+        record.setOfficeDate(dto.getOfficeDate());
         record.setPayMethod(dto.getPayMethod());
         record.setRemark(dto.getRemark());
         paymentRecordMapper.insert(record);

@@ -10,6 +10,10 @@
                o.total_amount      AS totalAmount,
                o.paid_amount       AS paidAmount,
                o.paid_quantity     AS paidQuantity,
+               o.total_amount - COALESCE(o.paid_amount, 0) AS remainAmount,
+               (SELECT COALESCE(SUM(i.quantity), 0)
+                FROM shipment_item i
+                WHERE i.order_id = o.id AND i.deleted = 0) - COALESCE(o.paid_quantity, 0) AS remainQuantity,
                o.ship_date         AS shipDate,
                o.remark,
                o.create_time       AS createTime,
@@ -65,6 +69,10 @@
                o.total_amount      AS totalAmount,
                o.paid_amount       AS paidAmount,
                o.paid_quantity     AS paidQuantity,
+               o.total_amount - COALESCE(o.paid_amount, 0) AS remainAmount,
+               (SELECT COALESCE(SUM(i.quantity), 0)
+                FROM shipment_item i
+                WHERE i.order_id = o.id AND i.deleted = 0) - COALESCE(o.paid_quantity, 0) AS remainQuantity,
                o.ship_date         AS shipDate,
                o.remark,
                o.create_time       AS createTime,
