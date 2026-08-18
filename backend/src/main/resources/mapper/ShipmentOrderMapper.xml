@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fuyuanzi.flow.module.payment.mapper.ShipmentOrderMapper">
+
+    <select id="selectOrderPage" resultType="com.fuyuanzi.flow.module.payment.vo.ShipmentOrderVO">
+        SELECT o.id,
+               o.order_no          AS orderNo,
+               o.business_id       AS businessId,
+               b.name              AS businessName,
+               o.total_amount      AS totalAmount,
+               o.paid_amount       AS paidAmount,
+               o.paid_quantity     AS paidQuantity,
+               o.total_amount - COALESCE(o.paid_amount, 0) AS remainAmount,
+               (SELECT COALESCE(SUM(i.quantity), 0)
+                FROM shipment_item i
+                WHERE i.order_id = o.id AND i.deleted = 0) - COALESCE(o.paid_quantity, 0) AS remainQuantity,
+               o.ship_date         AS shipDate,
+               o.remark,
+               o.create_time       AS createTime,
+               o.update_time       AS updateTime,
+               CASE
+                   WHEN o.total_amount IS NULL OR o.total_amount &lt;= 0 THEN 0
+                   WHEN o.paid_amount &gt;= o.total_amount THEN 2
+                   WHEN o.paid_amount &gt; 0 THEN 1
+                   ELSE 0
+               END                AS status,
+               DATEDIFF(CURDATE(), o.ship_date) AS overdueDays
+        FROM shipment_order o
+        LEFT JOIN base_business b ON o.business_id = b.id AND b.deleted = 0
+        WHERE o.deleted = 0
+        <if test="orderNo != null and orderNo != ''">
+            AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')
+        </if>
+        <if test="businessId != null">
+            AND o.business_id = #{businessId}
+        </if>
+        <if test="shipDateStart != null">
+            AND o.ship_date &gt;= #{shipDateStart}
+        </if>
+        <if test="shipDateEnd != null">
+            AND o.ship_date &lt;= #{shipDateEnd}
+        </if>
+        <choose>
+            <when test="status != null and status == 0">
+                AND (o.paid_amount IS NULL OR o.paid_amount &lt;= 0)
+            </when>
+            <when test="status != null and status == 1">
+                AND o.paid_amount &gt; 0
+                AND (o.total_amount IS NULL OR o.paid_amount &lt; o.total_amount)
+            </when>
+            <when test="status != null and status == 2">
+                AND o.total_amount &gt; 0
+                AND o.paid_amount &gt;= o.total_amount
+            </when>
+        </choose>
+        <choose>
+            <when test="sort == 'createAsc'">ORDER BY o.create_time ASC, o.id ASC</when>
+            <when test="sort == 'shipDateAsc'">ORDER BY o.ship_date ASC, o.id ASC</when>
+            <when test="sort == 'shipDateDesc'">ORDER BY o.ship_date DESC, o.id DESC</when>
+            <otherwise>ORDER BY o.create_time DESC, o.id DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectOrderById" resultType="com.fuyuanzi.flow.module.payment.vo.ShipmentOrderVO">
+        SELECT o.id,
+               o.order_no          AS orderNo,
+               o.business_id       AS businessId,
+               b.name              AS businessName,
+               o.total_amount      AS totalAmount,
+               o.paid_amount       AS paidAmount,
+               o.paid_quantity     AS paidQuantity,
+               o.total_amount - COALESCE(o.paid_amount, 0) AS remainAmount,
+               (SELECT COALESCE(SUM(i.quantity), 0)
+                FROM shipment_item i
+                WHERE i.order_id = o.id AND i.deleted = 0) - COALESCE(o.paid_quantity, 0) AS remainQuantity,
+               o.ship_date         AS shipDate,
+               o.remark,
+               o.create_time       AS createTime,
+               o.update_time       AS updateTime,
+               CASE
+                   WHEN o.total_amount IS NULL OR o.total_amount &lt;= 0 THEN 0
+                   WHEN o.paid_amount &gt;= o.total_amount THEN 2
+                   WHEN o.paid_amount &gt; 0 THEN 1
+                   ELSE 0
+               END                AS status,
+               DATEDIFF(CURDATE(), o.ship_date) AS overdueDays
+        FROM shipment_order o
+        LEFT JOIN base_business b ON o.business_id = b.id AND b.deleted = 0
+        WHERE o.deleted = 0
+        AND o.id = #{id}
+    </select>
+
+    <select id="selectItemsByOrderIds" resultType="com.fuyuanzi.flow.module.payment.vo.ShipmentItemVO">
+        SELECT i.id,
+               i.order_id          AS orderId,
+               i.manufacturer_id   AS manufacturerId,
+               m.name              AS manufacturerName,
+               i.product_id        AS productId,
+               p.name              AS productName,
+               i.quantity,
+               i.batch_no          AS batchNo,
+               i.amount
+        FROM shipment_item i
+        LEFT JOIN base_manufacturer m ON i.manufacturer_id = m.id AND m.deleted = 0
+        LEFT JOIN base_product p ON i.product_id = p.id AND p.deleted = 0
+        WHERE i.deleted = 0
+        AND i.order_id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
+        ORDER BY i.id ASC
+    </select>
+
+</mapper>

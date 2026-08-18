@@ -1,0 +1,49 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import MainLayout from '../layout/MainLayout.vue'
+import PlaceholderView from '../views/PlaceholderView.vue'
+import { moduleMenus } from '../config/menu'
+
+const pageMap = {
+  '/payment/shipment': () => import('../views/payment/ShipmentView.vue'),
+  '/payment/record': () => import('../views/payment/PaymentRecordView.vue'),
+  '/config/department': () => import('../views/config/DepartmentView.vue'),
+  '/config/user': () => import('../views/config/UserView.vue')
+}
+
+function buildLeafRoutes(items, moduleName, apiPrefix) {
+  const routes = []
+  for (const item of items) {
+    if (item.children && item.children.length) {
+      routes.push(...buildLeafRoutes(item.children, moduleName || item.name, apiPrefix))
+    } else {
+      routes.push({
+        path: item.path,
+        name: item.path,
+        component: pageMap[item.path] || PlaceholderView,
+        meta: { title: item.name, moduleName: moduleName || item.name, apiPrefix }
+      })
+    }
+  }
+  return routes
+}
+
+let leafRoutes = []
+for (const mod of moduleMenus) {
+  leafRoutes = leafRoutes.concat(buildLeafRoutes(mod.children, mod.name, mod.apiPrefix))
+}
+
+export default createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/',
+      component: MainLayout,
+      redirect: '/desktop/approval',
+      children: leafRoutes
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/desktop/approval'
+    }
+  ]
+})
