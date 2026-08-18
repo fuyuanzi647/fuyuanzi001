@@ -461,17 +461,48 @@ CREATE TABLE IF NOT EXISTS base_product (
 -- 人员配置
 CREATE TABLE IF NOT EXISTS config_user (
     id          BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-    username    VARCHAR(50)  NOT NULL COMMENT '登录名',
-    password    VARCHAR(200) NOT NULL COMMENT '密码',
-    real_name   VARCHAR(50)  COMMENT '姓名',
-    department_id BIGINT     COMMENT '所属部门ID',
-    role_id     BIGINT       COMMENT '角色ID',
-    status      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态:0停用1启用',
+    username    VARCHAR(50)  NOT NULL COMMENT '登录账户',
+    password    VARCHAR(200) NOT NULL DEFAULT '' COMMENT '密码',
+    real_name   VARCHAR(50)  NOT NULL COMMENT '姓名',
+    phone       VARCHAR(20)  COMMENT '手机号',
+    status      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态:0离职1在职',
+    hire_date   DATE         COMMENT '入职日期',
+    position_id BIGINT       COMMENT '当前岗位ID',
+    department_id BIGINT     COMMENT '当前部门ID',
+    employee_type VARCHAR(20) COMMENT '员工属性',
+    remark      VARCHAR(500) COMMENT '备注',
     create_time DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted     TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否1是',
     UNIQUE KEY uk_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='人员配置';
+
+-- 岗位档案
+CREATE TABLE IF NOT EXISTS config_position (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    name        VARCHAR(50)  NOT NULL COMMENT '岗位名称',
+    code        VARCHAR(50)  COMMENT '岗位编码',
+    sort        INT          NOT NULL DEFAULT 0 COMMENT '排序',
+    status      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态:0停用1启用',
+    remark      VARCHAR(500) COMMENT '备注',
+    create_time DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted     TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否1是'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='岗位档案';
+
+-- 业务员档案
+CREATE TABLE IF NOT EXISTS config_salesman (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    name        VARCHAR(50)  NOT NULL COMMENT '姓名',
+    phone       VARCHAR(20)  COMMENT '手机号',
+    position_id BIGINT       COMMENT '岗位ID',
+    department_id BIGINT     COMMENT '部门ID',
+    status      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态:0离职1在职',
+    remark      VARCHAR(500) COMMENT '备注',
+    create_time DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted     TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否1是'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='业务员档案';
 
 -- 权限分配（角色）
 CREATE TABLE IF NOT EXISTS config_role (

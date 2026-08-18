@@ -5,7 +5,8 @@ import { moduleMenus } from '../config/menu'
 
 const pageMap = {
   '/payment/shipment': () => import('../views/payment/ShipmentView.vue'),
-  '/config/department': () => import('../views/config/DepartmentView.vue')
+  '/config/department': () => import('../views/config/DepartmentView.vue'),
+  '/config/user': () => import('../views/config/UserView.vue')
 }
 
 function buildLeafRoutes(items, moduleName, apiPrefix) {
