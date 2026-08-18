@@ -94,6 +94,22 @@ public class PaymentController {
         return Result.ok(shipmentService.listPayments(orderId));
     }
 
+    @GetMapping("/record/page")
+    public Result<PageResult<PaymentRecordVO>> recordPage(@RequestParam(defaultValue = "1") long current,
+                                                          @RequestParam(defaultValue = "10") long size,
+                                                          @RequestParam(required = false) String orderNo,
+                                                          @RequestParam(required = false) Long businessId,
+                                                          @RequestParam(required = false)
+                                                          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate payDateStart,
+                                                          @RequestParam(required = false)
+                                                          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate payDateEnd,
+                                                          @RequestParam(required = false) String payMethod,
+                                                          @RequestParam(defaultValue = "payDateDesc") String sort) {
+        IPage<PaymentRecordVO> page = shipmentService.recordPage(
+                current, size, orderNo, businessId, payDateStart, payDateEnd, payMethod, sort);
+        return Result.ok(PageResult.of(page.getTotal(), page.getRecords()));
+    }
+
     @GetMapping("/options")
     public Result<Map<String, List<?>>> options() {
         return Result.ok(shipmentService.options());

@@ -28,5 +28,9 @@ public interface ShipmentService {
 
     List<PaymentRecordVO> listPayments(Long orderId);
 
+    IPage<PaymentRecordVO> recordPage(long current, long size, String orderNo, Long businessId,
+                                      LocalDate payDateStart, LocalDate payDateEnd,
+                                      String payMethod, String sort);
+
     Map<String, List<?>> options();
 }

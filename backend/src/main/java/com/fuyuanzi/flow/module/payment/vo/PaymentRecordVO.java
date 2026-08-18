@@ -19,6 +19,9 @@ public class PaymentRecordVO {
 
     private String businessName;
 
+    /** 订单下所有产品名称（逗号分隔） */
+    private String productName;
+
     private BigDecimal amount;
 
     private BigDecimal quantity;

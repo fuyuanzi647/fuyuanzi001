@@ -28,6 +28,10 @@ export function getOrderPayments(orderId) {
   return request.get(`/payment/shipment/${orderId}/payment`)
 }
 
+export function getPaymentRecordPage(params) {
+  return request.get('/payment/record/page', { params })
+}
+
 export function getPaymentOptions() {
   return request.get('/payment/options')
 }

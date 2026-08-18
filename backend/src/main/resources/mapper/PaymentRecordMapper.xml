@@ -23,4 +23,48 @@
         ORDER BY r.pay_date DESC, r.id DESC
     </select>
 
+    <select id="selectRecordPage" resultType="com.fuyuanzi.flow.module.payment.vo.PaymentRecordVO">
+        SELECT r.id,
+               r.order_id      AS orderId,
+               o.order_no      AS orderNo,
+               r.business_id   AS businessId,
+               b.name          AS businessName,
+               (SELECT GROUP_CONCAT(DISTINCT p.name SEPARATOR '、')
+                FROM shipment_item i
+                LEFT JOIN base_product p ON i.product_id = p.id AND p.deleted = 0
+                WHERE i.order_id = o.id AND i.deleted = 0) AS productName,
+               r.amount,
+               r.quantity,
+               r.pay_date      AS payDate,
+               r.office_date   AS officeDate,
+               r.pay_method    AS payMethod,
+               r.remark,
+               r.create_time   AS createTime
+        FROM payment_record r
+        LEFT JOIN shipment_order o ON r.order_id = o.id AND o.deleted = 0
+        LEFT JOIN base_business b ON r.business_id = b.id AND b.deleted = 0
+        WHERE r.deleted = 0
+        <if test="orderNo != null and orderNo != ''">
+            AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')
+        </if>
+        <if test="businessId != null">
+            AND r.business_id = #{businessId}
+        </if>
+        <if test="payDateStart != null">
+            AND r.pay_date &gt;= #{payDateStart}
+        </if>
+        <if test="payDateEnd != null">
+            AND r.pay_date &lt;= #{payDateEnd}
+        </if>
+        <if test="payMethod != null and payMethod != ''">
+            AND r.pay_method = #{payMethod}
+        </if>
+        <choose>
+            <when test="sort == 'payDateAsc'">ORDER BY r.pay_date ASC, r.id ASC</when>
+            <when test="sort == 'createAsc'">ORDER BY r.create_time ASC, r.id ASC</when>
+            <when test="sort == 'amountDesc'">ORDER BY r.amount DESC, r.id DESC</when>
+            <otherwise>ORDER BY r.pay_date DESC, r.id DESC</otherwise>
+        </choose>
+    </select>
+
 </mapper>

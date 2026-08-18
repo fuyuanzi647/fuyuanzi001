@@ -163,6 +163,15 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     @Override
+    public IPage<PaymentRecordVO> recordPage(long current, long size, String orderNo, Long businessId,
+                                             LocalDate payDateStart, LocalDate payDateEnd,
+                                             String payMethod, String sort) {
+        Page<PaymentRecordVO> page = new Page<>(current, size);
+        return paymentRecordMapper.selectRecordPage(
+                page, orderNo, businessId, payDateStart, payDateEnd, payMethod, sort);
+    }
+
+    @Override
     public Map<String, List<?>> options() {
         Map<String, List<?>> map = new HashMap<>();
         map.put("businesses", baseOptionMapper.selectBusinessOptions());
