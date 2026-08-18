@@ -4,7 +4,8 @@ import PlaceholderView from '../views/PlaceholderView.vue'
 import { moduleMenus } from '../config/menu'
 
 const pageMap = {
-  '/payment/shipment': () => import('../views/payment/ShipmentView.vue')
+  '/payment/shipment': () => import('../views/payment/ShipmentView.vue'),
+  '/config/department': () => import('../views/config/DepartmentView.vue')
 }
 
 function buildLeafRoutes(items, moduleName, apiPrefix) {

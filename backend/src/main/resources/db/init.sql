@@ -501,7 +501,9 @@ CREATE TABLE IF NOT EXISTS config_department (
     name        VARCHAR(50)  NOT NULL COMMENT '部门/区域名称',
     parent_id   BIGINT       NOT NULL DEFAULT 0 COMMENT '上级ID',
     type        VARCHAR(20)  COMMENT '类型:部门/区域',
-    sort        INT          NOT NULL DEFAULT 0 COMMENT '排序',
+    sort        INT          NOT NULL DEFAULT 0 COMMENT '同级排序',
+    status      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态:0停用1启用',
+    remark      VARCHAR(500) COMMENT '备注',
     create_time DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted     TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除:0否1是'
