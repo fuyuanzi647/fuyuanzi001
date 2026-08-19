@@ -6,6 +6,8 @@ import { moduleMenus } from '../config/menu'
 const pageMap = {
   '/payment/shipment': () => import('../views/payment/ShipmentView.vue'),
   '/payment/record': () => import('../views/payment/PaymentRecordView.vue'),
+  '/payment/receivable/detail': () => import('../views/payment/ReceivableView.vue'),
+  '/payment/receivable/overview': () => import('../views/payment/ReceivableOverviewView.vue'),
   '/config/department': () => import('../views/config/DepartmentView.vue'),
   '/config/user': () => import('../views/config/UserView.vue')
 }

@@ -14,3 +14,6 @@ frontend/dist/
 # 系统文件
 .DS_Store
 *.log
+
+# 本地记忆与凭据
+.monkeycode/

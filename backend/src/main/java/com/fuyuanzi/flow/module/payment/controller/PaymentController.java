@@ -8,6 +8,8 @@ import com.fuyuanzi.flow.module.payment.dto.PaymentSaveDTO;
 import com.fuyuanzi.flow.module.payment.dto.ShipmentSaveDTO;
 import com.fuyuanzi.flow.module.payment.service.ShipmentService;
 import com.fuyuanzi.flow.module.payment.vo.PaymentRecordVO;
+import com.fuyuanzi.flow.module.payment.vo.ReceivableOverviewVO;
+import com.fuyuanzi.flow.module.payment.vo.ReceivablePageVO;
 import com.fuyuanzi.flow.module.payment.vo.ShipmentOrderVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -77,6 +79,14 @@ public class PaymentController {
         return Result.ok();
     }
 
+    @PutMapping("/shipment/remark")
+    public Result<Void> updateRemark(@RequestBody Map<String, Object> body) {
+        Long id = Long.valueOf(String.valueOf(body.get("id")));
+        String remark = (String) body.get("remark");
+        shipmentService.updateRemark(id, remark);
+        return Result.ok();
+    }
+
     @DeleteMapping("/shipment/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         shipmentService.delete(id);
@@ -113,5 +123,32 @@ public class PaymentController {
     @GetMapping("/options")
     public Result<Map<String, List<?>>> options() {
         return Result.ok(shipmentService.options());
+    }
+
+    @GetMapping("/receivable/page")
+    public Result<ReceivablePageVO> receivablePage(@RequestParam(defaultValue = "1") long current,
+                                                   @RequestParam(defaultValue = "10") long size,
+                                                   @RequestParam(required = false) String orderNo,
+                                                   @RequestParam(required = false) Long businessId,
+                                                   @RequestParam(required = false) String region,
+                                                   @RequestParam(required = false)
+                                                   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate shipDateStart,
+                                                   @RequestParam(required = false)
+                                                   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate shipDateEnd,
+                                                   @RequestParam(defaultValue = "createDesc") String sort) {
+        return Result.ok(shipmentService.receivablePage(
+                current, size, orderNo, businessId, region, shipDateStart, shipDateEnd, sort));
+    }
+
+    @GetMapping("/receivable/overview")
+    public Result<List<ReceivableOverviewVO>> receivableOverview(@RequestParam(required = false) String orderNo,
+                                                                 @RequestParam(required = false) Long businessId,
+                                                                 @RequestParam(required = false) String region,
+                                                                 @RequestParam(required = false)
+                                                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate shipDateStart,
+                                                                 @RequestParam(required = false)
+                                                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate shipDateEnd) {
+        return Result.ok(shipmentService.receivableOverview(
+                orderNo, businessId, region, shipDateStart, shipDateEnd));
     }
 }

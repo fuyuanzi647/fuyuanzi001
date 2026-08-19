@@ -35,3 +35,15 @@ export function getPaymentRecordPage(params) {
 export function getPaymentOptions() {
   return request.get('/payment/options')
 }
+
+export function getReceivablePage(params) {
+  return request.get('/payment/receivable/page', { params })
+}
+
+export function getReceivableOverview(params) {
+  return request.get('/payment/receivable/overview', { params })
+}
+
+export function updateShipmentRemark(data) {
+  return request.put('/payment/shipment/remark', data)
+}

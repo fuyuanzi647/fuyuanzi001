@@ -11,10 +11,15 @@ import com.fuyuanzi.flow.module.payment.entity.ShipmentItem;
 import com.fuyuanzi.flow.module.payment.entity.ShipmentOrder;
 import com.fuyuanzi.flow.module.payment.mapper.BaseOptionMapper;
 import com.fuyuanzi.flow.module.payment.mapper.PaymentRecordMapper;
+import com.fuyuanzi.flow.module.payment.mapper.ReceivableMapper;
 import com.fuyuanzi.flow.module.payment.mapper.ShipmentItemMapper;
 import com.fuyuanzi.flow.module.payment.mapper.ShipmentOrderMapper;
 import com.fuyuanzi.flow.module.payment.service.ShipmentService;
 import com.fuyuanzi.flow.module.payment.vo.PaymentRecordVO;
+import com.fuyuanzi.flow.module.payment.vo.ReceivableOverviewVO;
+import com.fuyuanzi.flow.module.payment.vo.ReceivablePageVO;
+import com.fuyuanzi.flow.module.payment.vo.ReceivableTotalVO;
+import com.fuyuanzi.flow.module.payment.vo.ReceivableVO;
 import com.fuyuanzi.flow.module.payment.vo.ShipmentItemVO;
 import com.fuyuanzi.flow.module.payment.vo.ShipmentOrderVO;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +43,7 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final ShipmentItemMapper shipmentItemMapper;
     private final PaymentRecordMapper paymentRecordMapper;
     private final BaseOptionMapper baseOptionMapper;
+    private final ReceivableMapper receivableMapper;
 
     @Override
     public IPage<ShipmentOrderVO> page(long current, long size, String orderNo, Long businessId,
@@ -112,6 +118,17 @@ public class ShipmentServiceImpl implements ShipmentService {
         // 删除旧明细重新插入
         shipmentItemMapper.delete(new LambdaQueryWrapper<ShipmentItem>().eq(ShipmentItem::getOrderId, dto.getId()));
         saveItems(dto.getId(), dto);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateRemark(Long id, String remark) {
+        ShipmentOrder order = shipmentOrderMapper.selectById(id);
+        if (order == null) {
+            throw new BusinessException("发货订单不存在");
+        }
+        order.setRemark(remark);
+        shipmentOrderMapper.updateById(order);
     }
 
     @Override
@@ -198,5 +215,51 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .map(ShipmentSaveDTO.ShipmentItemDTO::getAmount)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public ReceivablePageVO receivablePage(long current, long size, String orderNo, Long businessId,
+                                           String region, LocalDate shipDateStart, LocalDate shipDateEnd,
+                                           String sort) {
+        Page<ReceivableVO> page = new Page<>(current, size);
+        IPage<ReceivableVO> result = receivableMapper.selectReceivablePage(
+                page, orderNo, businessId, region, shipDateStart, shipDateEnd, sort);
+        ReceivableTotalVO pageTotal = sumTotal(result.getRecords());
+        ReceivableTotalVO queryTotal = receivableMapper.selectReceivableTotal(
+                orderNo, businessId, region, shipDateStart, shipDateEnd);
+        ReceivablePageVO vo = new ReceivablePageVO();
+        vo.setTotal(result.getTotal());
+        vo.setRecords(result.getRecords());
+        vo.setPageTotal(pageTotal);
+        vo.setQueryTotal(queryTotal);
+        return vo;
+    }
+
+    @Override
+    public List<ReceivableOverviewVO> receivableOverview(String orderNo, Long businessId, String region,
+                                                         LocalDate shipDateStart, LocalDate shipDateEnd) {
+        return receivableMapper.selectReceivableOverview(
+                orderNo, businessId, region, shipDateStart, shipDateEnd);
+    }
+
+    private ReceivableTotalVO sumTotal(List<ReceivableVO> records) {
+        ReceivableTotalVO total = new ReceivableTotalVO();
+        if (records == null || records.isEmpty()) {
+            return total;
+        }
+        for (ReceivableVO r : records) {
+            total.setShipQuantity(total.getShipQuantity().add(nz(r.getShipQuantity())));
+            total.setShipAmount(total.getShipAmount().add(nz(r.getShipAmount())));
+            total.setOrderAmount(total.getOrderAmount().add(nz(r.getOrderAmount())));
+            total.setPaidAmount(total.getPaidAmount().add(nz(r.getPaidAmount())));
+            total.setPeriodPayAmount(total.getPeriodPayAmount().add(nz(r.getPeriodPayAmount())));
+            total.setReceivableQuantity(total.getReceivableQuantity().add(nz(r.getReceivableQuantity())));
+            total.setReceivableAmount(total.getReceivableAmount().add(nz(r.getReceivableAmount())));
+        }
+        return total;
+    }
+
+    private BigDecimal nz(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
     }
 }
