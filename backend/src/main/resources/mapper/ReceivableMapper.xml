@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fuyuanzi.flow.module.payment.mapper.ReceivableMapper">
+
+    <sql id="receivableSelect">
+        SELECT o.id                AS orderId,
+               o.order_no          AS orderNo,
+               b.region            AS region,
+               o.business_id       AS businessId,
+               b.name              AS businessName,
+               (SELECT GROUP_CONCAT(DISTINCT p.name SEPARATOR '、')
+                FROM shipment_item i
+                LEFT JOIN base_product p ON i.product_id = p.id AND p.deleted = 0
+                WHERE i.order_id = o.id AND i.deleted = 0) AS productName,
+               (SELECT COALESCE(SUM(i.quantity), 0)
+                FROM shipment_item i
+                WHERE i.order_id = o.id AND i.deleted = 0) AS shipQuantity,
+               (SELECT COALESCE(SUM(i.amount), 0)
+                FROM shipment_item i
+                WHERE i.order_id = o.id AND i.deleted = 0) AS shipAmount,
+               o.total_amount      AS orderAmount,
+               o.paid_amount       AS paidAmount,
+               (SELECT COALESCE(SUM(r.amount), 0)
+                FROM payment_record r
+                WHERE r.order_id = o.id
+                  AND r.deleted = 0
+                  AND r.pay_date &gt;= o.ship_date
+                  AND r.pay_date &lt;= DATE_ADD(o.ship_date, INTERVAL 60 DAY)) AS periodPayAmount,
+               (SELECT COALESCE(SUM(i.quantity), 0)
+                FROM shipment_item i
+                WHERE i.order_id = o.id AND i.deleted = 0) - COALESCE(o.paid_quantity, 0) AS receivableQuantity,
+               o.total_amount - COALESCE(o.paid_amount, 0) AS receivableAmount,
+               DATEDIFF(CURDATE(), o.ship_date) + 1 AS receivableDays,
+               o.ship_date         AS shipDate
+        FROM shipment_order o
+        LEFT JOIN base_business b ON o.business_id = b.id AND b.deleted = 0
+        WHERE o.deleted = 0
+        <if test="orderNo != null and orderNo != ''">
+            AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')
+        </if>
+        <if test="businessId != null">
+            AND o.business_id = #{businessId}
+        </if>
+        <if test="region != null and region != ''">
+            AND b.region = #{region}
+        </if>
+        <if test="shipDateStart != null">
+            AND o.ship_date &gt;= #{shipDateStart}
+        </if>
+        <if test="shipDateEnd != null">
+            AND o.ship_date &lt;= #{shipDateEnd}
+        </if>
+    </sql>
+
+    <select id="selectReceivablePage" resultType="com.fuyuanzi.flow.module.payment.vo.ReceivableVO">
+        <include refid="receivableSelect"/>
+        <choose>
+            <when test="sort == 'createAsc'">ORDER BY o.create_time ASC, o.id ASC</when>
+            <when test="sort == 'shipDateAsc'">ORDER BY o.ship_date ASC, o.id ASC</when>
+            <when test="sort == 'shipDateDesc'">ORDER BY o.ship_date DESC, o.id DESC</when>
+            <when test="sort == 'daysDesc'">ORDER BY receivableDays DESC, o.id DESC</when>
+            <otherwise>ORDER BY o.create_time DESC, o.id DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectReceivableTotal" resultType="com.fuyuanzi.flow.module.payment.vo.ReceivableTotalVO">
+        SELECT COALESCE(SUM(COALESCE((SELECT SUM(i.quantity) FROM shipment_item i WHERE i.order_id = o.id AND i.deleted = 0), 0)), 0) AS shipQuantity,
+               COALESCE(SUM(COALESCE((SELECT SUM(i.amount) FROM shipment_item i WHERE i.order_id = o.id AND i.deleted = 0), 0)), 0) AS shipAmount,
+               COALESCE(SUM(COALESCE(o.total_amount, 0)), 0) AS orderAmount,
+               COALESCE(SUM(COALESCE(o.paid_amount, 0)), 0) AS paidAmount,
+               COALESCE(SUM(COALESCE((SELECT SUM(r.amount) FROM payment_record r
+                                      WHERE r.order_id = o.id AND r.deleted = 0
+                                        AND r.pay_date &gt;= o.ship_date
+                                        AND r.pay_date &lt;= DATE_ADD(o.ship_date, INTERVAL 60 DAY)), 0)), 0) AS periodPayAmount,
+               COALESCE(SUM(COALESCE((SELECT SUM(i.quantity) FROM shipment_item i WHERE i.order_id = o.id AND i.deleted = 0), 0) - COALESCE(o.paid_quantity, 0)), 0) AS receivableQuantity,
+               COALESCE(SUM(COALESCE(o.total_amount, 0) - COALESCE(o.paid_amount, 0)), 0) AS receivableAmount
+        FROM shipment_order o
+        LEFT JOIN base_business b ON o.business_id = b.id AND b.deleted = 0
+        WHERE o.deleted = 0
+        <if test="orderNo != null and orderNo != ''">
+            AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')
+        </if>
+        <if test="businessId != null">
+            AND o.business_id = #{businessId}
+        </if>
+        <if test="region != null and region != ''">
+            AND b.region = #{region}
+        </if>
+        <if test="shipDateStart != null">
+            AND o.ship_date &gt;= #{shipDateStart}
+        </if>
+        <if test="shipDateEnd != null">
+            AND o.ship_date &lt;= #{shipDateEnd}
+        </if>
+    </select>
+
+    <select id="selectReceivableOverview" resultType="com.fuyuanzi.flow.module.payment.vo.ReceivableOverviewVO">
+        SELECT b.region            AS region,
+               o.business_id       AS businessId,
+               b.name              AS businessName,
+               COUNT(DISTINCT o.id) AS orderCount,
+               COALESCE(SUM(si.quantity), 0) AS shipQuantity,
+               COALESCE(SUM(si.amount), 0)   AS shipAmount,
+               COALESCE(SUM(o.paid_amount), 0) AS paidAmount,
+               COALESCE(SUM(pr.period_amount), 0) AS periodPayAmount,
+               COALESCE(SUM(o.total_amount - COALESCE(o.paid_amount, 0)), 0) AS receivableAmount,
+               COALESCE(SUM(COALESCE(si.quantity, 0) - COALESCE(o.paid_quantity, 0)), 0) AS receivableQuantity
+        FROM shipment_order o
+        LEFT JOIN base_business b ON o.business_id = b.id AND b.deleted = 0
+        LEFT JOIN (SELECT i.order_id,
+                          SUM(i.quantity) AS quantity,
+                          SUM(i.amount)   AS amount
+                   FROM shipment_item i
+                   WHERE i.deleted = 0
+                   GROUP BY i.order_id) si ON si.order_id = o.id
+        LEFT JOIN (SELECT r.order_id, SUM(r.amount) AS period_amount
+                   FROM payment_record r
+                   JOIN shipment_order so ON r.order_id = so.id AND so.deleted = 0
+                   WHERE r.deleted = 0
+                     AND r.pay_date &gt;= so.ship_date
+                     AND r.pay_date &lt;= DATE_ADD(so.ship_date, INTERVAL 60 DAY)
+                   GROUP BY r.order_id) pr ON pr.order_id = o.id
+        WHERE o.deleted = 0
+        <if test="orderNo != null and orderNo != ''">
+            AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')
+        </if>
+        <if test="businessId != null">
+            AND o.business_id = #{businessId}
+        </if>
+        <if test="region != null and region != ''">
+            AND b.region = #{region}
+        </if>
+        <if test="shipDateStart != null">
+            AND o.ship_date &gt;= #{shipDateStart}
+        </if>
+        <if test="shipDateEnd != null">
+            AND o.ship_date &lt;= #{shipDateEnd}
+        </if>
+        GROUP BY o.business_id, b.region, b.name
+        ORDER BY receivableAmount DESC
+    </select>
+
+    <select id="selectOverviewTotal" resultType="com.fuyuanzi.flow.module.payment.vo.ReceivableTotalVO">
+        SELECT COALESCE(SUM(si.quantity), 0) AS shipQuantity,
+               COALESCE(SUM(si.amount), 0)   AS shipAmount,
+               COALESCE(SUM(o.total_amount), 0) AS orderAmount,
+               COALESCE(SUM(o.paid_amount), 0) AS paidAmount,
+               COALESCE(SUM(pr.period_amount), 0) AS periodPayAmount,
+               COALESCE(SUM(COALESCE(si.quantity, 0) - COALESCE(o.paid_quantity, 0)), 0) AS receivableQuantity,
+               COALESCE(SUM(o.total_amount - COALESCE(o.paid_amount, 0)), 0) AS receivableAmount
+        FROM shipment_order o
+        LEFT JOIN base_business b ON o.business_id = b.id AND b.deleted = 0
+        LEFT JOIN (SELECT i.order_id,
+                          SUM(i.quantity) AS quantity,
+                          SUM(i.amount)   AS amount
+                   FROM shipment_item i
+                   WHERE i.deleted = 0
+                   GROUP BY i.order_id) si ON si.order_id = o.id
+        LEFT JOIN (SELECT r.order_id, SUM(r.amount) AS period_amount
+                   FROM payment_record r
+                   JOIN shipment_order so ON r.order_id = so.id AND so.deleted = 0
+                   WHERE r.deleted = 0
+                     AND r.pay_date &gt;= so.ship_date
+                     AND r.pay_date &lt;= DATE_ADD(so.ship_date, INTERVAL 60 DAY)
+                   GROUP BY r.order_id) pr ON pr.order_id = o.id
+        WHERE o.deleted = 0
+        <if test="orderNo != null and orderNo != ''">
+            AND o.order_no LIKE CONCAT('%', #{orderNo}, '%')
+        </if>
+        <if test="businessId != null">
+            AND o.business_id = #{businessId}
+        </if>
+        <if test="region != null and region != ''">
+            AND b.region = #{region}
+        </if>
+        <if test="shipDateStart != null">
+            AND o.ship_date &gt;= #{shipDateStart}
+        </if>
+        <if test="shipDateEnd != null">
+            AND o.ship_date &lt;= #{shipDateEnd}
+        </if>
+    </select>
+
+</mapper>
