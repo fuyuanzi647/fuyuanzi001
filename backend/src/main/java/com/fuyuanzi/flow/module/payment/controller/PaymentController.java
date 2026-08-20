@@ -8,6 +8,8 @@ import com.fuyuanzi.flow.module.payment.dto.PaymentSaveDTO;
 import com.fuyuanzi.flow.module.payment.dto.ShipmentSaveDTO;
 import com.fuyuanzi.flow.module.payment.service.ShipmentService;
 import com.fuyuanzi.flow.module.payment.vo.PaymentRecordVO;
+import com.fuyuanzi.flow.module.payment.vo.ReceivableOverviewVO;
+import com.fuyuanzi.flow.module.payment.vo.ReceivablePageVO;
 import com.fuyuanzi.flow.module.payment.vo.ShipmentOrderVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -108,6 +110,39 @@ public class PaymentController {
         IPage<PaymentRecordVO> page = shipmentService.recordPage(
                 current, size, orderNo, businessId, payDateStart, payDateEnd, payMethod, sort);
         return Result.ok(PageResult.of(page.getTotal(), page.getRecords()));
+    }
+
+    @GetMapping("/receivable/page")
+    public Result<ReceivablePageVO> receivablePage(@RequestParam(defaultValue = "1") long current,
+                                                   @RequestParam(defaultValue = "10") long size,
+                                                   @RequestParam(required = false) String orderNo,
+                                                   @RequestParam(required = false) Long businessId,
+                                                   @RequestParam(required = false) String region,
+                                                   @RequestParam(required = false)
+                                                   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate shipDateStart,
+                                                   @RequestParam(required = false)
+                                                   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate shipDateEnd,
+                                                   @RequestParam(defaultValue = "createDesc") String sort) {
+        return Result.ok(shipmentService.receivablePage(
+                current, size, orderNo, businessId, region, shipDateStart, shipDateEnd, sort));
+    }
+
+    @GetMapping("/receivable/overview")
+    public Result<List<ReceivableOverviewVO>> receivableOverview(@RequestParam(required = false) String orderNo,
+                                                                 @RequestParam(required = false) Long businessId,
+                                                                 @RequestParam(required = false) String region,
+                                                                 @RequestParam(required = false)
+                                                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate shipDateStart,
+                                                                 @RequestParam(required = false)
+                                                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate shipDateEnd) {
+        return Result.ok(shipmentService.receivableOverview(
+                orderNo, businessId, region, shipDateStart, shipDateEnd));
+    }
+
+    @PutMapping("/shipment/{id}/remark")
+    public Result<Void> updateRemark(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        shipmentService.updateRemark(id, body.get("remark"));
+        return Result.ok();
     }
 
     @GetMapping("/options")

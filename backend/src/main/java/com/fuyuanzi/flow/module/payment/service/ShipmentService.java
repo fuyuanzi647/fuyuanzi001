@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.fuyuanzi.flow.module.payment.dto.PaymentSaveDTO;
 import com.fuyuanzi.flow.module.payment.dto.ShipmentSaveDTO;
 import com.fuyuanzi.flow.module.payment.vo.PaymentRecordVO;
+import com.fuyuanzi.flow.module.payment.vo.ReceivableOverviewVO;
+import com.fuyuanzi.flow.module.payment.vo.ReceivablePageVO;
 import com.fuyuanzi.flow.module.payment.vo.ShipmentOrderVO;
 
 import java.time.LocalDate;
@@ -31,6 +33,16 @@ public interface ShipmentService {
     IPage<PaymentRecordVO> recordPage(long current, long size, String orderNo, Long businessId,
                                       LocalDate payDateStart, LocalDate payDateEnd,
                                       String payMethod, String sort);
+
+    ReceivablePageVO receivablePage(long current, long size, String orderNo, Long businessId,
+                                    String region, LocalDate shipDateStart, LocalDate shipDateEnd,
+                                    String sort);
+
+    List<ReceivableOverviewVO> receivableOverview(String orderNo, Long businessId,
+                                                  String region, LocalDate shipDateStart,
+                                                  LocalDate shipDateEnd);
+
+    void updateRemark(Long id, String remark);
 
     Map<String, List<?>> options();
 }
